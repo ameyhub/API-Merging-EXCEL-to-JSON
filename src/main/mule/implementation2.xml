@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="StartingFlow" doc:id="422d5a99-d18f-449a-93c0-7511f791220f" >
+		<http:listener doc:name="Listener" doc:id="f51078a9-acd3-4ef1-af65-b517e71841e5" config-ref="HTTP_Listener_config" path="/impfinal"/>
+		<logger level="INFO" doc:name="Moving to scatter gatter" doc:id="1d988d8a-5753-40b6-8698-6ff9798561ea" message='"Moving to scatter gatter"'/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="ea4710da-3d68-449a-add2-807e4abde77f" >
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="45b33b57-80d0-4089-8445-d4180ba78cc6" name="initialFlow"/>
+			</route>
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="024d34a4-b781-4f21-aed8-f8916a7b616e" name="referToInitalFlow"/>
+			</route>
+		</scatter-gather>
+	</flow>
+	<sub-flow name="initialFlow" doc:id="d58c12a5-92fb-48d1-b720-7accd0f3a84c" >
+		<logger level="INFO" doc:name="initialLogger" doc:id="37c05340-a111-48d5-a00e-165eac2632f7" message='"Flow has been started"' />
+		<file:list doc:name="List" doc:id="a18adc7e-a03d-41a2-a1c7-bfc3f2e64ef7" directoryPath="C:\Users\amey.didolkar\nimishPOC">
+			<file:matcher filenamePattern="*.xlsx" />
+		</file:list>
+		<set-variable doc:name="Set Variable" doc:id="5ef0c0f4-5d35-47db-8946-beabca99b564" variableName="aggregation" value="#[[]]" />
+		<foreach doc:name="For Each" doc:id="92d8f4a1-fc6e-4c14-8958-7336e8387a5f" collection="#[payload.attributes.path]">
+			<try doc:name="Try" doc:id="527ccdde-3c19-4eef-a9d3-51add8a2b55e" >
+				<file:read doc:name="Read" doc:id="d8c540fe-b306-4255-96fc-cb7df85e3045" path='#[payload]' outputMimeType="application/xlsx" />
+				<ee:transform doc:name="accumalation" doc:id="b4164fcc-7d6f-4db1-b799-c98afebacdfa">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="aggregation"><![CDATA[%dw 2.0
+output application/java
+---
+vars.aggregation + payload.Sheet1]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+				<logger level="INFO" doc:name="printing payload" doc:id="ea1c6070-da69-4518-b1f3-aa57f42d354b" message="#[payload]" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3aa6c79d-1ac4-4e08-8313-a8cd65abd008" >
+						<ee:transform doc:name="failure Response" doc:id="4d1011a3-1900-435f-b23a-6e3fcaf65fa3" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "Internal server error"
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+		<ee:transform doc:name="Aggregating" doc:id="0a9b9838-bb2f-48b9-8981-5f2268cd3c31">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.aggregation]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="7fa91950-eb88-4519-b22f-bb44af984312" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+//var jsonPayload = payload reduce ((val , acc) -> acc ++ val)
+---
+"data": flatten(payload)
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="c03d5575-06ec-48a5-b854-d1b455683b5c" path="C:\Users\amey.didolkar\nimishPOC\FinalOutput.json"/>
+		<logger level="INFO" doc:name="LoggerEnded" doc:id="f5c76968-c714-4b0f-b2ac-3464a6ed7348" message='"flow has been ended"'/>
+	</sub-flow>
+	<flow name="referToInitalFlow" doc:id="c2d11c5a-d6e7-478d-972e-e3a2870565da" >
+		<logger level="INFO" doc:name="Transfer" doc:id="bbbacc0b-9ce8-4317-8aa3-9c9139846112" message='"Transfer To Initial Flow"'/>
+	</flow>
+</mule>

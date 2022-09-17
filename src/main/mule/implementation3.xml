@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="implementation3Flow" doc:id="7b22be74-e484-4b4a-a627-c8dcee3862fb" >
+		<http:listener doc:name="Listener" doc:id="9c017cb9-b499-4fdb-85d9-fae25305f82e" config-ref="HTTP_Listener_config" path="/output"/>
+		<logger level="INFO" doc:name="Moving Toward Scatter Gatter" doc:id="12209972-5941-413f-b343-5c515a9aed48" message='"Moving Toward Scatter Gatter"'/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="fd9d9e05-99aa-425a-8c50-c0ed2f3d66c2" >
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="019b2a40-7f2e-48b8-848e-496510fe732d" name="initaFlow"/>
+			</route>
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="5c24b13f-44ef-4e07-b62e-ec9824d81419" name="onwork"/>
+			</route>
+		</scatter-gather>
+	</flow>
+	<sub-flow name="initaFlow" doc:id="b261426a-4350-4a2d-9e68-30c739c4fbb8" >
+		<logger level="INFO" doc:name="Starting to Convert" doc:id="789be379-18d7-40d2-8d25-44db030a93f0" message="Entered into Subflow to convert Excel"/>
+		<file:list doc:name="List" doc:id="90921168-cf92-48ee-857b-a09ececcae81" directoryPath="C:\Users\amey.didolkar\nimishPOC"/>
+		<set-variable value="#[[]]" doc:name="Set Variable" doc:id="32c97754-8d59-4549-b580-9a2be65905e7" variableName="arregation"/>
+		<foreach doc:name="For Each" doc:id="cd02a099-6c0e-4f6c-a90b-c7853dcbc790" collection="#[payload.attributes.path]">
+			<logger level="INFO" doc:name="printing payload" doc:id="ce621973-5bc7-485b-9abe-deb82b6272ac" message="#[payload]"/>
+			<file:read doc:name="Read" doc:id="7c748885-b5f9-44a2-9260-11ff673fe5d0" path="#[payload]"/>
+			<ee:transform doc:name="Transform Message" doc:id="31de4cc8-9f69-4a9e-96a1-c4a936d044e6" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="arregation" ><![CDATA[%dw 2.0
+output application/java
+---
+vars.arregation + payload.Sheet1]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<logger level="INFO" doc:name="printing payload" doc:id="e5d03df4-1b97-4137-8654-02317572c9eb" message="#[payload]"/>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="4aaccd7d-97d5-4a09-8a34-83b2203c9435" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.aggregation]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="62761f4f-28a0-4fc3-bfba-11835d606d5a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var jsonPayload = payload reduce ((val , acc) -> acc ++ val)
+---
+{
+    "data": flatten(jsonPayload)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="printing payload" doc:id="f83020d7-0b14-4e8b-a1c9-8dc6a42b1042" message="#[payload]"/>
+	</sub-flow>
+	<sub-flow name="onwork" doc:id="af4ac2fe-4a56-4629-8424-759af2734c16" >
+		<logger level="INFO" doc:name="Logger" doc:id="c5aaf6e8-b79d-4ac1-b66f-e155a3a24f07" />
+	</sub-flow>
+</mule>

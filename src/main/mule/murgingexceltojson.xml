@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="662428c7-7929-47d8-b647-e9a5455cf7e6" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="705bc310-6449-43f9-a7e9-12fe4e3d1f83" >
+	</file:config>
+	<flow name="murgingexceltojsonFlow" doc:id="ecab355b-db00-476e-b8cf-a8ca5b99c585" >
+		<http:listener doc:name="Listener" doc:id="eb9a37d8-6e72-4d3c-b5d5-5eef66474cf9" path="/murgeExcel" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="Moving to scatter gatter" doc:id="e2bdd141-a3f2-4ed5-9bdd-f2721a6118de" message='"Moving to scatter gatter"'/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="e0a21853-0263-4721-8c95-4975473da685" >
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="416b2ea2-f7c6-4bf7-9598-8a1e793fde13" name="Flow1"/>
+			</route>
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="22aff1ef-5b77-469e-ae36-a6738e183ab4" name="murgingexceltojsonFlow1"/>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="33e4bd87-4814-4147-bf6e-e8dc5fb1fb1f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="3f25ecdb-e612-4579-8be1-a9c451db617c" message="#[payload]"/>
+	</flow>
+	<flow name="Flow1" doc:id="60cf91ec-4bbf-4850-a1b0-0c602db3d106" >
+		<logger level="INFO" doc:name="Enter to Flow1" doc:id="74e809ca-9976-42d1-bb64-1268f3ca18e2" message='"Enter to Flow1"'/>
+		<file:list doc:name="List" doc:id="acbe8b31-911b-449b-a2bf-defd36e482b4" directoryPath="C:\Users\amey.didolkar\nimishPOC"/>
+		<foreach doc:name="For Each" doc:id="9630a00d-bba6-48b0-bfb4-472edc012353" collection="#[payload.attributes.path]">
+			<logger level="INFO" doc:name="payload" doc:id="9272ea63-7689-45e8-9e04-9b142c216b24" message="#[payload]" />
+			<file:read doc:id="35140f5e-4df7-457e-a8f0-24da3b89042c" config-ref="File_Config" path="#[payload]" outputMimeType="application/xlsx" />
+			<ee:transform doc:name="Transform Message" doc:id="d00dd5f0-f6ba-4ca3-9ca1-3766bfcb539c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<logger level="INFO" doc:name="payload" doc:id="a3634130-ec0c-4fde-85bc-0141096a2799" message="#[payload]" />
+		</foreach>
+	</flow>
+	<flow name="murgingexceltojsonFlow1" doc:id="62c4cb67-716c-4e9a-ab48-813180a51b72" >
+		<logger level="INFO" doc:name="Logger" doc:id="d02885e5-7a1f-44c8-b964-fc4e5db55b01" />
+	</flow>
+</mule>

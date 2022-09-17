@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="implementationFlow" doc:id="02c0e936-9fc7-490d-942e-e1450a166225" >
+		<http:listener doc:name="Listener" doc:id="4b2bb8af-dcdf-4862-85e3-2ecd6176b386" config-ref="HTTP_Listener_config" path="/testPOC"/>
+		<logger level="INFO" doc:name="Moving to scatter gatter" doc:id="8997e1a0-dcab-4491-9937-6c483a594e28" message='"Moving to scatter gatter"'/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="05d8f5eb-ac79-462a-91c8-c1f5fcb30488" >
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="31563958-504f-43af-a13e-6f54ac5fe125" name="implementationFlow1"/>
+			</route>
+			<route >
+				<flow-ref doc:name="Flow Reference" doc:id="b296b5ca-751d-4114-a3e7-e8bbb358f28a" name="implementationFlow2"/>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="31379c6b-6037-4674-8a7e-39154f366fa2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten(payload..payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6b281e8f-f2af-42b8-95a2-38ee2afd5630" message="#[payload]"/>
+	</flow>
+	<flow name="implementationFlow1" doc:id="0cb44f41-317b-4291-b49e-72999109d55c" >
+		<file:read doc:name="Read" doc:id="e5b598a3-d6c2-4c7c-a92c-10e694cb6dd3" path="C:\Users\amey.didolkar\nimishPOC\excel1.xlsx" outputMimeType="application/xlsx"/>
+		<ee:transform doc:name="Transform Message" doc:id="3e334e1b-693e-45b8-99ea-08ef9c0771ba" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="63f4f34d-677c-463e-aa37-50062f288901" />
+	</flow>
+	<flow name="implementationFlow2" doc:id="2c07b88c-a741-42f7-94f9-9e647f487f34" >
+		<file:read doc:name="Read" doc:id="f760cd8d-c70c-47ab-ba0a-8b84894202a9" path="C:\Users\amey.didolkar\nimishPOC\excel2.xlsx" outputMimeType="application/xlsx"/>
+		<ee:transform doc:name="Transform Message" doc:id="7ca2b242-46c4-4640-98c7-f6807f5e802b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c4405e7c-d29e-4c55-96c4-a7b927ea789f" />
+	</flow>
+</mule>
